@@ -198,13 +198,48 @@ tbody tr.selected { background: rgba(109, 40, 217, 0.1); }
 /* Footer */
 .footer { position: relative; z-index: 1; margin-top: auto; text-align: center; color: #8a90b0; font-size: 13px; padding: 40px 24px; }
 
-/* Responsive */
+/* Responsive — tablet */
 @media (max-width: 820px) {
+  .hero { padding: 44px 20px 32px; }
   .workspace { grid-template-columns: 1fr; }
   .progress { grid-template-columns: repeat(2, 1fr); }
   .features { grid-template-columns: 1fr; }
+  .field.grow { flex-basis: 100%; }
+  .field:not(.grow) { flex: 1 1 calc(50% - 6px); }
   .field:not(.grow) input { width: 100%; }
-  .controls .btn-solid { width: 100%; justify-content: center; }
+  .controls .btn-solid { flex-basis: 100%; width: 100%; justify-content: center; }
+}
+
+/* Responsive — phone */
+@media (max-width: 560px) {
+  .hero { padding: 32px 12px 28px; }
+  .hero h1 { margin-bottom: 26px; letter-spacing: -1px; }
+
+  .browser { border-radius: 14px; }
+  .browser-bar { gap: 8px; padding: 10px 12px; }
+  .browser-nav { display: none; }              /* save space on tiny screens */
+  .url-bar { font-size: 11px; padding: 6px 10px; max-width: none; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .browser-body { padding: 16px 12px; }
+
+  .progress { grid-template-columns: 1fr; gap: 8px; }
+  .step { padding: 11px 12px; }
+
+  .panel { padding: 13px; }
+  table { font-size: 12px; }
+  th, td { padding: 9px 8px; }
+
+  .mail-row { flex-wrap: wrap; }
+  .mail-row span { width: auto; }
+  .mail-body { padding: 13px; }
+
+  .footer { padding: 28px 16px; }
+}
+
+/* Larger touch targets on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .ba-btn, .nav-btn { width: 34px; height: 34px; }
+  tbody tr td { padding-top: 14px; padding-bottom: 14px; }
 }
 
 /* Accessibility: honor reduced-motion preference */

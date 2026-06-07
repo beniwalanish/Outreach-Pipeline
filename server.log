@@ -1,0 +1,12 @@
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+2026-06-08 04:21:24 [[32minfo[39m] 	Server on http://localhost:5501 (DRY_RUN=true)
+2026-06-08 04:22:11 [[32minfo[39m] 	API /generate domain=youtube.com maxSimilar=3 maxPeople=3
+2026-06-08 04:22:11 [[32minfo[39m] 	Ocean.io: finding companies similar to "youtube.com"
+2026-06-08 04:22:12 [[31merror[39m] Error: Invalid API token: Current API token is not registered in our database
+    at toOceanError (/Users/beni/outreach-pipeline/src/services/ocean.service.js:69:15)
+    at postSearchPage (/Users/beni/outreach-pipeline/src/services/ocean.service.js:113:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async searchCompanies (/Users/beni/outreach-pipeline/src/services/ocean.service.js:161:18)
+    at async Object.findSimilarCompanies (/Users/beni/outreach-pipeline/src/services/ocean.service.js:231:21)
+    at async stageOcean (/Users/beni/outreach-pipeline/src/app.js:67:19)
+    at async /Users/beni/outreach-pipeline/src/server.js:103:21

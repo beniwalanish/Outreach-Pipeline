@@ -8,7 +8,18 @@
  * Swap MOCK_MODE -> false and implement fetchContacts() to wire the real API.
  */
 
-const MOCK_MODE = true;
+const MOCK_MODE = false;
+
+// Where the backend lives.
+//  - If this page IS served by the Express backend (port 5501) -> same origin.
+//  - Otherwise (Live Server, file://, etc.) -> same hostname on port 5501.
+//  - Override anytime by setting window.API_BASE before this script loads.
+const API_BASE = (() => {
+  if (window.API_BASE != null) return window.API_BASE;
+  if (location.port === '5501') return '';
+  const host = location.hostname || 'localhost';
+  return `${location.protocol === 'file:' ? 'http:' : location.protocol}//${host}:5501`;
+})();
 
 const MOCK_CONTACTS = [
   { fullName: 'Jane Doe', title: 'CEO', companyName: 'Anthropic', companyDomain: 'anthropic.com', email: 'jane@anthropic.com', linkedinUrl: 'https://www.linkedin.com/in/janedoe' },
@@ -105,12 +116,14 @@ async function fetchContacts(params) {
     await sleep(300);
     return MOCK_CONTACTS.slice(0, Math.max(1, params.maxSimilar));
   }
-  // Real backend (wire later):
-  // const res = await fetch('/api/generate', { method:'POST',
-  //   headers:{'Content-Type':'application/json'}, body: JSON.stringify(params) });
-  // if (!res.ok) throw new Error(`Backend error ${res.status}`);
-  // return res.json();
-  throw new Error('Live mode not implemented yet');
+  const res = await fetch(`${API_BASE}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`);
+  return Array.isArray(data.contacts) ? data.contacts : [];
 }
 
 async function runPipeline(params) {
@@ -118,13 +131,26 @@ async function runPipeline(params) {
   workspace.hidden = true;
   resetSteps();
 
-  for (const step of STEP_ORDER) {
+  // Kick off the real request immediately; animate steps alongside it.
+  const dataPromise = fetchContacts(params);
+
+  for (let i = 0; i < STEP_ORDER.length; i += 1) {
+    const step = STEP_ORDER[i];
     setStep(step, 'active');
-    await sleep(700);
-    setStep(step, 'done');
+    // Hold the final step "active" until the backend actually responds.
+    if (i < STEP_ORDER.length - 1) {
+      await sleep(700);
+      setStep(step, 'done');
+    }
   }
 
-  const contacts = await fetchContacts(params);
+  let contacts;
+  try {
+    contacts = await dataPromise;
+  } finally {
+    setStep(STEP_ORDER[STEP_ORDER.length - 1], 'done');
+  }
+
   renderResults(contacts);
   workspace.hidden = false;
   if (contacts.length) selectContact(0, contacts);

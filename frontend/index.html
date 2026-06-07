@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OutreachPipeline — Leads in Minutes</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg-fx" aria-hidden="true">
+      <span class="orb orb-1"></span>
+      <span class="orb orb-2"></span>
+      <span class="orb orb-3"></span>
+      <div class="grid"></div>
+    </div>
+
+    <!-- Hero -->
+    <header class="hero">
+      <h1>Outreach <span class="grad">Pipeline</span></h1>
+
+      <!-- Browser mockup framing the live tool -->
+      <div class="browser" id="demo">
+        <div class="browser-bar">
+          <div class="dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="browser-nav">
+            <button type="button" class="nav-btn" id="nav-back" title="Back" aria-label="Back">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <button type="button" class="nav-btn" id="nav-forward" title="Forward" aria-label="Forward">
+              <svg viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M9 18l6-6-6-6"/></svg>
+            </button>
+          </div>
+          <div class="url-bar">
+            <svg class="lock" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5Zm3 8H9V6a3 3 0 0 1 6 0v3Z"/></svg>
+            app.outreachpipeline.ai/generate
+          </div>
+          <div class="browser-actions">
+            <button type="button" class="ba-btn" id="copy-url" title="Copy URL" aria-label="Copy URL">
+              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
+            </button>
+            <button type="button" class="ba-btn" id="share-url" title="Share" aria-label="Share">
+              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M18 16a3 3 0 0 0-2.4 1.2l-7-3.5a3 3 0 0 0 0-1.4l7-3.5a3 3 0 1 0-.7-1.8l-7 3.5a3 3 0 1 0 0 5l7 3.5A3 3 0 1 0 18 16Z"/></svg>
+            </button>
+            <button type="button" class="ba-btn" id="open-tab" title="Open in new tab" aria-label="Open in new tab">
+              <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 3v2h3.6l-9.3 9.3 1.4 1.4L19 6.4V10h2V3h-7ZM5 5h5V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-2v5H5V5Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="browser-body">
+          <!-- Controls -->
+          <form id="lead-form" class="controls">
+            <div class="field grow">
+              <label for="domain">Company Domain</label>
+              <input id="domain" type="text" placeholder="openai.com" value="openai.com" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label for="max-similar">Similar Cos.</label>
+              <input id="max-similar" type="number" min="1" max="50" value="5" />
+            </div>
+            <div class="field">
+              <label for="max-people">People / Co.</label>
+              <input id="max-people" type="number" min="1" max="50" value="10" />
+            </div>
+            <button id="generate-btn" type="submit" class="btn-solid">
+              <span class="btn-label">Generate</span>
+              <span class="spinner" hidden></span>
+            </button>
+          </form>
+
+          <!-- Progress -->
+          <div class="progress" id="progress-card" hidden>
+            <div class="step" data-step="ocean">
+              <span class="step-dot"></span>
+              <span class="step-name">Ocean Search</span>
+              <span class="step-status">Pending</span>
+            </div>
+            <div class="step" data-step="prospeo">
+              <span class="step-dot"></span>
+              <span class="step-name">Prospeo Search</span>
+              <span class="step-status">Pending</span>
+            </div>
+            <div class="step" data-step="enrich">
+              <span class="step-dot"></span>
+              <span class="step-name">Enrichment</span>
+              <span class="step-status">Pending</span>
+            </div>
+            <div class="step" data-step="filter">
+              <span class="step-dot"></span>
+              <span class="step-name">Filtering</span>
+              <span class="step-status">Pending</span>
+            </div>
+          </div>
+
+          <!-- Split: results + preview -->
+          <div class="workspace" id="workspace" hidden>
+            <div class="panel results">
+              <div class="panel-head">
+                <h3>Verified Contacts</h3>
+                <span class="count" id="result-count">0</span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Name</th><th>Title</th><th>Company</th><th>Email</th><th>in</th></tr>
+                  </thead>
+                  <tbody id="results-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <aside class="panel preview" id="preview-card">
+              <div class="panel-head"><h3>Email Preview</h3></div>
+              <div class="mail">
+                <div class="mail-row"><span>To</span><b id="preview-to">—</b></div>
+                <div class="mail-row"><span>Subject</span><b id="preview-subject">—</b></div>
+                <div class="mail-body" id="preview-body"></div>
+              </div>
+              <p class="note">Sending gated by <code>DRY_RUN</code> on the backend.</p>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <footer class="footer">
+      © 2026 OutreachPipeline · Built for Vocallabs / Subspace · Node.js + Vanilla JS
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

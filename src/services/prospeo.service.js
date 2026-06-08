@@ -25,7 +25,9 @@ const ENRICH_PERSON_PATH = '/enrich-person';
 const BULK_ENRICH_PERSON_PATH = '/bulk-enrich-person';
 
 // Bulk enrichment.
-const BULK_BATCH_SIZE = 50; // Prospeo max per bulk request
+// Prospeo max per bulk request = 50. Overridable for diagnostics (set
+// PROSPEO_BULK_BATCH_SIZE=1 to isolate 429s to a single record).
+const BULK_BATCH_SIZE = Math.min(config.prospeoBulkBatchSize || 50, 50);
 
 // Default enrichment options.
 const DEFAULT_ENRICH_OPTIONS = Object.freeze({
@@ -44,9 +46,12 @@ const RETRY_BASE_DELAY_MS = 500;
 const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 
 // Rate limits.
-const MIN_INTERVAL_MS = 1000; // >= 1 req/sec
+// Per-second spacing is overridable via PROSPEO_MIN_INTERVAL_MS (default 5000
+// = 1 req / 5s) to back off from 429s during diagnosis.
+const MIN_INTERVAL_MS = config.prospeoMinIntervalMs || 5000;
 const MAX_PER_MINUTE = 20; // <= 20 req/min
 const MINUTE_MS = 60_000;
+const MAX_RETRY_AFTER_MS = 120_000; // cap server-directed Retry-After waits
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -91,19 +96,102 @@ const rateLimiter = (() => {
 })();
 
 /**
+ * Log Prospeo rate-limit / quota signals from response headers.
+ *
+ * Prospeo's ACTUAL headers (docs, /api-docs/rate-limits) — NOT x-ratelimit-*:
+ *   x-daily-request-left, x-minute-request-left, x-daily-reset-seconds,
+ *   x-minute-reset-seconds, x-daily-rate-limit, x-minute-rate-limit,
+ *   x-second-rate-limit
+ *
+ * @param {object} headers axios response headers (lowercased keys)
+ * @param {string} tag context label (e.g. 'OK 200' or 'ERR 429')
+ */
+function logRateHeaders(headers, tag) {
+  if (!headers || typeof headers !== 'object') return;
+
+  const rate = {};
+  for (const [k, v] of Object.entries(headers)) {
+    const key = k.toLowerCase();
+    if (
+      key.startsWith('x-daily') ||
+      key.startsWith('x-minute') ||
+      key.startsWith('x-second') ||
+      key.startsWith('x-ratelimit') || // generic fallback, just in case
+      key === 'retry-after'
+    ) {
+      rate[key] = v;
+    }
+  }
+
+  if (Object.keys(rate).length > 0) {
+    logger.info(
+      `Prospeo [${tag}] rate headers: ` +
+        `daily-left=${rate['x-daily-request-left']} ` +
+        `minute-left=${rate['x-minute-request-left']} ` +
+        `second-limit=${rate['x-second-rate-limit']} ` +
+        `daily-limit=${rate['x-daily-rate-limit']} ` +
+        `minute-limit=${rate['x-minute-rate-limit']} ` +
+        `daily-reset-s=${rate['x-daily-reset-seconds']} ` +
+        `minute-reset-s=${rate['x-minute-reset-seconds']} ` +
+        `retry-after=${rate['retry-after']} ` +
+        `| raw=${JSON.stringify(rate)}`
+    );
+  } else {
+    // No rate headers => dump full set once so we can diagnose blind.
+    logger.warn(
+      `Prospeo [${tag}] no rate headers present. All headers: ${JSON.stringify(
+        headers
+      )}`
+    );
+  }
+}
+
+/**
+ * Parse Retry-After header (seconds or HTTP-date) into ms. Null if absent/invalid.
+ */
+function parseRetryAfterMs(headers) {
+  if (!headers) return null;
+  const raw = headers['retry-after'] ?? headers['Retry-After'];
+  if (raw == null) return null;
+  const secs = Number(raw);
+  if (Number.isFinite(secs)) return Math.min(secs * 1000, MAX_RETRY_AFTER_MS);
+  const when = Date.parse(raw);
+  if (Number.isFinite(when)) {
+    return Math.min(Math.max(when - Date.now(), 0), MAX_RETRY_AFTER_MS);
+  }
+  return null;
+}
+
+/**
+ * Extract Prospeo's error_code from a response body. Prospeo returns errors as
+ * HTTP 4xx/429 with body { error:true, error_code:"RATE_LIMITED" | ... }.
+ * Older/edge bodies used message/error_message — kept as fallback.
+ */
+function extractProspeoCode(data) {
+  if (!data || typeof data !== 'object') return null;
+  return (
+    data.error_code ||
+    data.message ||
+    data.error_message ||
+    data.detail ||
+    null
+  );
+}
+
+/**
  * Map a Prospeo error/HTTP failure to a clear Error.
  */
 function toProspeoError(err) {
   if (err.response) {
     const { status, data } = err.response;
-    const detail =
-      (data && (data.message || data.error_message || data.detail)) || '';
+    const code = extractProspeoCode(data);
     const e = new Error(
-      detail
-        ? `Prospeo request failed (HTTP ${status}): ${detail}`
+      code
+        ? `Prospeo request failed (HTTP ${status}): ${code}`
         : `Prospeo request failed (HTTP ${status})`
     );
     e.status = status;
+    e.prospeoCode = code; // e.g. RATE_LIMITED, INSUFFICIENT_CREDITS, INVALID_REQUEST
     e.responseData = data;
     return e;
   }
@@ -140,20 +228,40 @@ async function prospeoPost(path, body) {
       const res = await client.post(path, body, {
         headers: { 'X-KEY': config.prospeoApiKey },
       });
+      logRateHeaders(res.headers, `OK ${res.status}`);
       if (res.data && res.data.error === true) {
-        const code = res.data.message || res.data.error_message || 'UNKNOWN_ERROR';
+        const code = extractProspeoCode(res.data) || 'UNKNOWN_ERROR';
         const e = new Error(`Prospeo error: ${code}`);
         e.prospeoCode = code; // non-retryable by design
         throw e;
       }
       return res.data;
     } catch (err) {
+      // Surface status, body, rate/quota headers on HTTP failures (esp. 429).
+      if (err.response) {
+        const { status, data, headers } = err.response;
+        logger.error(
+          new Error(
+            `Prospeo [ERR ${status}] ${path} error_code=${extractProspeoCode(data)} ` +
+              `body=${JSON.stringify(data)}`
+          )
+        );
+        logRateHeaders(headers, `ERR ${status}`);
+      }
       if (isRetryable(err) && attempt < MAX_RETRIES) {
         attempt += 1;
-        const delay = RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
         const status = err.response ? err.response.status : 'network';
+        // Prefer server-directed Retry-After; else exponential backoff.
+        const retryAfter = err.response
+          ? parseRetryAfterMs(err.response.headers)
+          : null;
+        const delay =
+          retryAfter != null
+            ? retryAfter
+            : RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
         logger.warn(
-          `Prospeo transient failure (${status}). Retry ${attempt}/${MAX_RETRIES} in ${delay}ms`
+          `Prospeo transient failure (${status}). Retry ${attempt}/${MAX_RETRIES} in ${delay}ms` +
+            (retryAfter != null ? ' (server Retry-After)' : '')
         );
         await sleep(delay);
         continue;
@@ -460,6 +568,11 @@ async function bulkEnrichPeople(people, options = {}) {
 
     try {
       logger.info(`Prospeo bulk-enrich batch ${batchNo}: ${batch.length} people`);
+      // Exact payload sent to /bulk-enrich-person. X-KEY lives in the HTTP
+      // header (NOT this body), so logging the body exposes no secret.
+      logger.info(
+        `Prospeo bulk-enrich batch ${batchNo} payload: ${JSON.stringify(body)}`
+      );
       const data = await prospeoPost(BULK_ENRICH_PERSON_PATH, body);
       const items = extractBulkItems(data);
 

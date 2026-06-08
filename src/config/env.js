@@ -37,6 +37,10 @@ const ENV_SCHEMA = [
 const NUMERIC_SCHEMA = [
   { key: 'MAX_SIMILAR_COMPANIES', prop: 'maxSimilarCompanies', default: 5 },
   { key: 'MAX_PEOPLE_PER_COMPANY', prop: 'maxPeoplePerCompany', default: 10 },
+  // Prospeo diagnostics/tuning. Defaults are production-safe; override to
+  // isolate bulk-enrich 429s (e.g. PROSPEO_BULK_BATCH_SIZE=1).
+  { key: 'PROSPEO_BULK_BATCH_SIZE', prop: 'prospeoBulkBatchSize', default: 50 },
+  { key: 'PROSPEO_MIN_INTERVAL_MS', prop: 'prospeoMinIntervalMs', default: 5000 },
 ];
 
 function buildConfig() {

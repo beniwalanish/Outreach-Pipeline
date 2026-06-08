@@ -87,11 +87,11 @@ a { text-decoration: none; color: inherit; }
 .hero h1 { font-size: clamp(36px, 6vw, 60px); font-weight: 800; letter-spacing: -1.5px; color: #fff;
   margin-bottom: 40px;
   animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
-.grad { background: linear-gradient(110deg, var(--primary-2), var(--accent), #ec4899, var(--primary-2));
-  background-size: 250% auto;
+.grad { background: linear-gradient(90deg, #8b5cf6, #06b6d4, #ec4899, #06b6d4, #8b5cf6);
+  background-size: 200% auto;
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-  animation: shimmer 6s linear infinite; }
-@keyframes shimmer { to { background-position: 250% center; } }
+  animation: shimmer 7s linear infinite; }
+@keyframes shimmer { 0% { background-position: 0% center; } 100% { background-position: -200% center; } }
 .sub { color: #aab0cf; font-size: 18px; max-width: 640px; margin: 18px auto 0; }
 .hero-cta { display: flex; gap: 14px; justify-content: center; margin: 30px 0 48px; flex-wrap: wrap; }
 
@@ -121,9 +121,7 @@ a { text-decoration: none; color: inherit; }
 .browser-actions { display: flex; gap: 4px; }
 .ba-btn { display: grid; place-items: center; width: 28px; height: 28px; padding: 0;
   border: none; border-radius: 8px; background: transparent; color: #8b8ba7;
-  cursor: pointer; transition: background 0.15s, color 0.15s; }
-.ba-btn:hover { background: rgba(15, 16, 36, 0.07); color: var(--primary); }
-.ba-btn:active { transform: scale(0.92); }
+  cursor: default; }
 .browser-body { padding: 22px 20px; }
 
 /* Controls */

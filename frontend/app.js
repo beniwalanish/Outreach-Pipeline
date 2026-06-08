@@ -210,40 +210,13 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-// ---------- Browser-bar icon actions ----------
+// ---------- Browser-bar back / forward (cosmetic) ----------
 
-const MOCK_URL = 'https://app.outreachpipeline.ai/generate';
-
-function flash(btn) {
-  btn.style.color = 'var(--ok)';
-  setTimeout(() => { btn.style.color = ''; }, 900);
-}
-
-document.getElementById('copy-url').addEventListener('click', async (e) => {
-  try {
-    await navigator.clipboard.writeText(MOCK_URL);
-    flash(e.currentTarget);
-  } catch { alert('Copy failed'); }
-});
-
-document.getElementById('share-url').addEventListener('click', async (e) => {
-  if (navigator.share) {
-    try { await navigator.share({ title: 'OutreachPipeline', url: MOCK_URL }); } catch {}
-  } else {
-    try { await navigator.clipboard.writeText(MOCK_URL); flash(e.currentTarget); } catch {}
-  }
-});
-
-document.getElementById('open-tab').addEventListener('click', () => {
-  window.open(MOCK_URL, '_blank', 'noopener');
-});
-
-// Back / forward — cosmetic browser-chrome feedback (mock).
 const navBack = document.getElementById('nav-back');
 const navForward = document.getElementById('nav-forward');
-navForward.disabled = true; // nothing forward yet, like a fresh tab
+if (navForward) navForward.disabled = true; // nothing forward yet, like a fresh tab
 [navBack, navForward].forEach((b) =>
-  b.addEventListener('click', () => {
+  b && b.addEventListener('click', () => {
     if (b.disabled) return;
     b.animate(
       [{ transform: 'scale(0.85)' }, { transform: 'scale(1)' }],

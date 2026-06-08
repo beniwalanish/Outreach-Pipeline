@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OutreachPipeline — Leads in Minutes</title>
+    <title>OutreachPipeline</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="favicon.svg" />
     <link rel="stylesheet" href="style.css" />
@@ -40,16 +40,16 @@
             <svg class="lock" viewBox="0 0 24 24" width="13" height="13"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a5 5 0 0 0-5-5Zm3 8H9V6a3 3 0 0 1 6 0v3Z"/></svg>
             engineerbeni.tech/generate
           </div>
-          <div class="browser-actions">
-            <button type="button" class="ba-btn" id="copy-url" title="Copy URL" aria-label="Copy URL">
+          <div class="browser-actions" aria-hidden="true">
+            <span class="ba-btn">
               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v12h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Zm0 16H8V7h11v14Z"/></svg>
-            </button>
-            <button type="button" class="ba-btn" id="share-url" title="Share" aria-label="Share">
+            </span>
+            <span class="ba-btn">
               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M18 16a3 3 0 0 0-2.4 1.2l-7-3.5a3 3 0 0 0 0-1.4l7-3.5a3 3 0 1 0-.7-1.8l-7 3.5a3 3 0 1 0 0 5l7 3.5A3 3 0 1 0 18 16Z"/></svg>
-            </button>
-            <button type="button" class="ba-btn" id="open-tab" title="Open in new tab" aria-label="Open in new tab">
+            </span>
+            <span class="ba-btn">
               <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M14 3v2h3.6l-9.3 9.3 1.4 1.4L19 6.4V10h2V3h-7ZM5 5h5V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5h-2v5H5V5Z"/></svg>
-            </button>
+            </span>
           </div>
         </div>
 
@@ -58,7 +58,7 @@
           <form id="lead-form" class="controls">
             <div class="field grow">
               <label for="domain">Company Domain</label>
-              <input id="domain" type="text" placeholder="openai.com" value="openai.com" autocomplete="off" />
+              <input id="domain" type="text" placeholder="subspace.money" value="subspace.money" autocomplete="off" />
             </div>
             <div class="field">
               <label for="max-similar">Similar Cos.</label>

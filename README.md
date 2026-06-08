@@ -1,9 +1,17 @@
 # Outreach Pipeline
 
-A fully automated cold-outreach data pipeline, built as a Node.js CLI. Given a
-single company domain, it discovers similar companies, finds their decision
-makers, enriches verified work emails, and sends personalized outreach — with
-strong credit- and send-safety guarantees at every stage.
+A fully automated cold-outreach data pipeline. Given a single company domain, it
+discovers similar companies, finds their decision makers, enriches verified work
+emails, and sends personalized outreach — with strong credit- and send-safety
+guarantees at every stage.
+
+It ships in two forms that share the same stage logic:
+
+- **CLI** (`src/app.js`) — run the pipeline (or any single stage) from the
+  terminal.
+- **Web app** (`src/server.js` + `frontend/`) — an Express server exposing a
+  small REST API and serving a single-page UI. Deployable to Render as one
+  Node web service (see [`DEPLOYMENT.md`](./DEPLOYMENT.md)).
 
 > Built as an SDE internship assignment for Vocallabs / Subspace.
 
@@ -65,11 +73,14 @@ Brevo
 | Concern        | Choice                          |
 | -------------- | ------------------------------- |
 | Runtime        | Node.js 20+ (CommonJS)          |
+| Web framework  | Express 5                       |
+| Frontend       | Vanilla HTML / CSS / JS (SPA)   |
 | HTTP client    | Axios                           |
 | Config         | dotenv                          |
 | Logging        | Winston                         |
 | Email provider | Brevo (transactional API)       |
 | Data providers | Ocean.io, Prospeo               |
+| Deploy target  | Render (single Node web service)|
 
 ---
 
@@ -78,6 +89,7 @@ Brevo
 ```
 src/
 ├── app.js                     # Orchestrator + CLI (the only place Brevo is wired)
+├── server.js                  # Express API + static frontend host (reuses app.js stages)
 ├── config/
 │   └── env.js                 # Centralized, validated config (single source of truth)
 ├── services/
@@ -87,12 +99,14 @@ src/
 └── utils/
     ├── logger.js              # Winston logger
     └── emailTemplate.js       # generateColdEmail(contact)
+frontend/                      # Single-page UI (index.html, app.js, style.css)
 outputs/                       # Per-stage JSON artifacts (created at runtime)
 ```
 
-Each service exposes pure, testable functions and owns its own retry, rate
-limiting, and error mapping. The orchestrator only sequences stages and persists
-artifacts.
+The web server reuses the CLI's exported stage functions — no logic is
+duplicated. Each service exposes pure, testable functions and owns its own
+retry, rate limiting, and error mapping. The orchestrator only sequences stages
+and persists artifacts.
 
 ---
 
@@ -116,6 +130,9 @@ MAX_PEOPLE_PER_COMPANY=10
 
 # Send safety — must be explicitly "false" to send real emails
 DRY_RUN=true
+
+# Web server port (optional; Render injects PORT automatically — do not hardcode)
+PORT=3000
 ```
 
 `config/env.js` validates required keys at startup and throws a descriptive
@@ -193,6 +210,48 @@ Flags:
   }
 ]
 ```
+
+---
+
+## Web App & REST API
+
+The Express server serves the single-page UI and the API from the same origin.
+
+```bash
+npm start          # node src/server.js  -> "Server running on port 3000"
+npm run dev        # nodemon (auto-reload during development)
+# open http://localhost:3000
+```
+
+### Endpoints
+
+| Method | Path            | Body                                  | Description                                  |
+| ------ | --------------- | ------------------------------------- | -------------------------------------------- |
+| `GET`  | `/api/health`   | —                                     | Liveness probe → `{ ok, dryRun }`            |
+| `POST` | `/api/generate` | `{ domain, maxSimilar?, maxPeople? }` | Runs ocean→search→enrich→filter; returns `{ contacts, counts }` |
+| `POST` | `/api/send`     | `{ contacts? }`                       | Sends outreach (DRY_RUN gated); falls back to saved `contacts.json` |
+
+### Server-side safety
+
+- **Credit guards** — `maxSimilar` / `maxPeople` are clamped to **1–25**
+  server-side regardless of client input.
+- **Domain validation** — `/api/generate` rejects malformed domains with `400`.
+- **Rate limiting** — paid endpoints are capped at **10 calls/hour/IP**
+  (in-memory; resets on restart, per-instance). Add real auth + a shared store
+  before serious production use.
+- **CORS** — dev CORS is open (`*`); tighten or remove for production.
+- **Send safety** — `/api/send` honors the same `DRY_RUN` gate as the CLI.
+
+---
+
+## Deployment
+
+The app deploys to **Render** as a single Node web service (UI + API in one
+process). A `render.yaml` blueprint is included. See
+[`DEPLOYMENT.md`](./DEPLOYMENT.md) for the full guide.
+
+> GitHub Pages will **not** work — it only hosts static files and cannot run the
+> Node backend.
 
 ---
 

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: outreach-pipeline
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      # DRY_RUN defaults to "true" for send-safety. Set "false" only when you
+      # explicitly want real emails to go out.
+      - key: DRY_RUN
+        value: "true"
+      # Secrets — set these in the Render dashboard (sync:false = not in repo).
+      - key: OCEAN_API_KEY
+        sync: false
+      - key: PROSPEO_API_KEY
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        sync: false
+      # Optional tuning (defaults applied in code if unset)
+      - key: MAX_SIMILAR_COMPANIES
+        value: "5"
+      - key: MAX_PEOPLE_PER_COMPANY
+        value: "10"

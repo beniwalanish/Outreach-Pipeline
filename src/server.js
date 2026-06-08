@@ -31,7 +31,7 @@ const {
 } = require('./app');
 
 const app = express();
-const PORT = parseInt(process.env.PORT, 10) || 5501;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -149,7 +149,8 @@ app.post('/api/send', rateLimit, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  logger.info(`Server on http://localhost:${PORT} (DRY_RUN=${config.dryRun})`);
+  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server on port ${PORT} (DRY_RUN=${config.dryRun})`);
 });
 
 module.exports = app;

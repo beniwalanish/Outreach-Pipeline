@@ -10,16 +10,17 @@
 
 const MOCK_MODE = false;
 
-// Where the backend lives.
-//  - If this page IS served by the Express backend (port 5501) -> same origin.
-//  - Otherwise (Live Server, file://, etc.) -> same hostname on port 5501.
-//  - Override anytime by setting window.API_BASE before this script loads.
-const API_BASE = (() => {
-  if (window.API_BASE != null) return window.API_BASE;
-  if (location.port === '5501') return '';
-  const host = location.hostname || 'localhost';
-  return `${location.protocol === 'file:' ? 'http:' : location.protocol}//${host}:5501`;
-})();
+// API base:
+//  - Local dev (localhost / 127.0.0.1) -> talk to the backend on :3000.
+//  - Production (Render, etc.) -> same-origin ('') since the server serves
+//    both the frontend and the API.
+//  - Override anytime via window.API_BASE before this script loads.
+const API_BASE =
+  window.API_BASE != null
+    ? window.API_BASE
+    : ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3000'
+    : '';
 
 const MOCK_CONTACTS = [
   { fullName: 'Jane Doe', title: 'CEO', companyName: 'Anthropic', companyDomain: 'anthropic.com', email: 'jane@anthropic.com', linkedinUrl: 'https://www.linkedin.com/in/janedoe' },

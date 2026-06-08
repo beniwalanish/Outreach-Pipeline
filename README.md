@@ -9,7 +9,7 @@ strong credit- and send-safety guarantees at every stage.
 
 ---
 
-## Overview
+## Overview 
 
 The pipeline takes one input (a company domain) and runs it through four
 external services. Each stage persists its output to a JSON file, so stages can

@@ -80,8 +80,32 @@ function generateColdEmail(c) {
   return { subject, htmlContent };
 }
 
-function renderResults(contacts) {
+function renderResults(contacts, counts) {
   resultsBody.innerHTML = '';
+
+  if (!contacts.length) {
+    const c = counts || {};
+    const scanned =
+      (c.people != null || c.companies != null)
+        ? ` Scanned ${c.companies ?? 0} companies and ${c.people ?? 0} people, but none had a verified work email.`
+        : '';
+    resultsBody.innerHTML = `
+      <tr class="empty-row">
+        <td colspan="5">
+          <div class="empty-state">
+            <strong>No verified contacts found.</strong>
+            <span>${scanned} Try a higher “People / Co.” value or a different domain.</span>
+          </div>
+        </td>
+      </tr>`;
+    resultCount.textContent = '0';
+    // Reset the email preview.
+    document.getElementById('preview-to').textContent = '—';
+    document.getElementById('preview-subject').textContent = '—';
+    document.getElementById('preview-body').innerHTML = '';
+    return;
+  }
+
   contacts.forEach((c, i) => {
     const tr = document.createElement('tr');
     tr.dataset.index = i;
@@ -114,7 +138,8 @@ function selectContact(index, contacts) {
 async function fetchContacts(params) {
   if (MOCK_MODE) {
     await sleep(300);
-    return MOCK_CONTACTS.slice(0, Math.max(1, params.maxSimilar));
+    const contacts = MOCK_CONTACTS.slice(0, Math.max(1, params.maxSimilar));
+    return { contacts, counts: { companies: contacts.length, people: contacts.length, enriched: contacts.length, verified: contacts.length } };
   }
   const res = await fetch(`${API_BASE}/api/generate`, {
     method: 'POST',
@@ -123,7 +148,10 @@ async function fetchContacts(params) {
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Backend error ${res.status}`);
-  return Array.isArray(data.contacts) ? data.contacts : [];
+  return {
+    contacts: Array.isArray(data.contacts) ? data.contacts : [],
+    counts: data.counts || {},
+  };
 }
 
 async function runPipeline(params) {
@@ -144,14 +172,15 @@ async function runPipeline(params) {
     }
   }
 
-  let contacts;
+  let result;
   try {
-    contacts = await dataPromise;
+    result = await dataPromise;
   } finally {
     setStep(STEP_ORDER[STEP_ORDER.length - 1], 'done');
   }
 
-  renderResults(contacts);
+  const contacts = result.contacts || [];
+  renderResults(contacts, result.counts);
   workspace.hidden = false;
   if (contacts.length) selectContact(0, contacts);
   workspace.scrollIntoView({ behavior: 'smooth', block: 'nearest' });

@@ -172,7 +172,11 @@ tbody tr { cursor: pointer; transition: background 0.15s;
 tbody tr:hover { background: rgba(139, 92, 246, 0.07); }
 tbody tr.selected { background: rgba(109, 40, 217, 0.1); }
 .email-cell { color: var(--accent); }
-.in-link { display: inline-grid; place-items: center; width: 22px; height: 22px;
+.empty-row td { text-align: center; padding: 28px 12px; }
+.empty-row:hover { background: transparent; }
+.empty-state { display: flex; flex-direction: column; gap: 6px; align-items: center; cursor: default; }
+.empty-state strong { font-size: 14px; color: var(--ink); }
+.empty-state span { font-size: 12px; color: var(--muted); max-width: 420px; }.in-link { display: inline-grid; place-items: center; width: 22px; height: 22px;
   border-radius: 6px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; }
 
 /* Mail preview */

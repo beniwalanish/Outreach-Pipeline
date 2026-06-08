@@ -10,3 +10,13 @@
     at async Object.findSimilarCompanies (/Users/beni/outreach-pipeline/src/services/ocean.service.js:231:21)
     at async stageOcean (/Users/beni/outreach-pipeline/src/app.js:67:19)
     at async /Users/beni/outreach-pipeline/src/server.js:103:21
+2026-06-08 05:31:29 [[32minfo[39m] 	API /generate domain=openai.com maxSimilar=5 maxPeople=10
+2026-06-08 05:31:29 [[32minfo[39m] 	Ocean.io: finding companies similar to "openai.com"
+2026-06-08 05:31:32 [[31merror[39m] Error: Invalid API token: Current API token is not registered in our database
+    at toOceanError (/Users/beni/outreach-pipeline/src/services/ocean.service.js:69:15)
+    at postSearchPage (/Users/beni/outreach-pipeline/src/services/ocean.service.js:113:13)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async searchCompanies (/Users/beni/outreach-pipeline/src/services/ocean.service.js:161:18)
+    at async Object.findSimilarCompanies (/Users/beni/outreach-pipeline/src/services/ocean.service.js:231:21)
+    at async stageOcean (/Users/beni/outreach-pipeline/src/app.js:67:19)
+    at async /Users/beni/outreach-pipeline/src/server.js:103:21

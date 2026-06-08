@@ -8,9 +8,12 @@
  *     → take first N similar              (MAX_SIMILAR_COMPANIES)
  *     → Prospeo.searchPeopleByCompanyDomains (Stage 2a)
  *     → take top M people per company     (MAX_PEOPLE_PER_COMPANY)
- *     → Prospeo.bulkEnrichPeople          (Stage 2b, default path)
- *     → filter emailRevealed && emailStatus==='VERIFIED'
+ *     → map search results -> contacts     (NO bulk-enrich; pipeline ends here)
  *     → outputs/contacts.json
+ *
+ * NOTE: Stage 2b (Prospeo bulk-enrich) is DISABLED. The pipeline ends after
+ * contact discovery and returns all available search fields (name, title,
+ * company, linkedin) even when verified emails are unavailable.
  *
  * Stages run independently so you can resume from saved intermediates
  * WITHOUT re-spending API credits:
@@ -91,6 +94,34 @@ async function stageEnrich(people) {
   logger.info(`Enrich matches (any email): ${matches.length}/${enriched.length}`);
   await saveJson(FILES.enriched, enriched);
   return enriched;
+}
+
+/**
+ * Map raw search-person results directly to the final contact shape.
+ * The bulk-enrich stage is intentionally bypassed (no /bulk-enrich-person),
+ * so emails are whatever search returned (usually null). All other fields
+ * (name, title, company, linkedin) are passed through unchanged.
+ *
+ * @param {object[]} people normalized search results (from stageSearch)
+ * @returns {object[]} contacts in final output shape
+ */
+function mapPeopleToContacts(people) {
+  if (!Array.isArray(people)) {
+    throw new Error('mapPeopleToContacts: people array required');
+  }
+  const contacts = people.map((p) => ({
+    companyDomain: p.companyDomain || null,
+    companyName: p.companyName || null,
+    fullName: p.fullName || null,
+    firstName: p.firstName || null,
+    lastName: p.lastName || null,
+    title: p.title || null,
+    email: p.email || null, // search rarely returns email; kept for shape parity
+    linkedinUrl: p.linkedinUrl || null,
+    personId: p.personId || null,
+  }));
+  logger.info(`Contacts mapped from search: ${contacts.length}`);
+  return contacts;
 }
 
 /** Stage 3: keep only revealed + VERIFIED, map to final output shape. No API. */
@@ -229,15 +260,14 @@ async function main() {
       await stageOcean(args.domain, maxSimilar);
       break;
 
-    case 'search':
+    case 'search': {
       domains = (await loadJson(args.input || FILES.ocean)).domains;
-      await stageSearch(domains, maxPeople);
+      people = await stageSearch(domains, maxPeople);
+      // Enrich removed: discovery output is the final contact set.
+      const searchContacts = mapPeopleToContacts(people);
+      await saveJson(FILES.contacts, searchContacts);
       break;
-
-    case 'enrich':
-      people = await loadJson(args.input || FILES.people);
-      await stageEnrich(people);
-      break;
+    }
 
     case 'filter': {
       enriched = await loadJson(args.input || FILES.enriched);
@@ -266,9 +296,10 @@ async function main() {
         await saveJson(FILES.contacts, []);
         break;
       }
-      enriched = await stageEnrich(people);
-      const contacts = stageFilter(enriched);
+      // Bulk-enrich stage removed: pipeline ends after contact discovery.
+      const contacts = mapPeopleToContacts(people);
       await saveJson(FILES.contacts, contacts);
+      logger.info(`Pipeline complete: ${contacts.length} contacts discovered (no enrichment).`);
       break;
     }
   }
@@ -289,6 +320,7 @@ module.exports = {
   stageSearch,
   stageEnrich,
   stageFilter,
+  mapPeopleToContacts,
   stageSend,
   parseArgs,
   FILES,

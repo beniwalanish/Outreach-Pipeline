@@ -24,8 +24,7 @@ const { logger } = require('./utils/logger');
 const {
   stageOcean,
   stageSearch,
-  stageEnrich,
-  stageFilter,
+  mapPeopleToContacts,
   stageSend,
   FILES,
 } = require('./app');
@@ -102,16 +101,16 @@ app.post('/api/generate', rateLimit, async (req, res) => {
 
     const domains = await stageOcean(domain, maxSimilar);
     if (domains.length === 0) {
-      return res.json({ contacts: [], counts: { companies: 0, people: 0, enriched: 0, verified: 0 } });
+      return res.json({ contacts: [], counts: { companies: 0, people: 0, contacts: 0 } });
     }
 
     const people = await stageSearch(domains, maxPeople);
     if (people.length === 0) {
-      return res.json({ contacts: [], counts: { companies: domains.length, people: 0, enriched: 0, verified: 0 } });
+      return res.json({ contacts: [], counts: { companies: domains.length, people: 0, contacts: 0 } });
     }
 
-    const enriched = await stageEnrich(people);
-    const contacts = stageFilter(enriched);
+    // Bulk-enrich stage removed: discovered contacts are returned directly.
+    const contacts = mapPeopleToContacts(people);
     await fs.writeFile(FILES.contacts, JSON.stringify(contacts, null, 2), 'utf8');
 
     res.json({
@@ -119,8 +118,7 @@ app.post('/api/generate', rateLimit, async (req, res) => {
       counts: {
         companies: domains.length,
         people: people.length,
-        enriched: enriched.length,
-        verified: contacts.length,
+        contacts: contacts.length,
       },
     });
   } catch (err) {

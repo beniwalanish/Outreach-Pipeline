@@ -11,16 +11,15 @@
 const MOCK_MODE = false;
 
 // API base:
-//  - Local dev (localhost / 127.0.0.1) -> talk to the backend on :3000.
-//  - Production (Render, etc.) -> same-origin ('') since the server serves
-//    both the frontend and the API.
+//  - Local dev (localhost / 127.0.0.1) -> backend on :3000.
+//  - Production -> the deployed Render service.
 //  - Override anytime via window.API_BASE before this script loads.
 const API_BASE =
   window.API_BASE != null
     ? window.API_BASE
     : ['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://localhost:3000'
-    : '';
+    : 'https://outreach-pipeline-91zy.onrender.com';
 
 const MOCK_CONTACTS = [
   { fullName: 'Jane Doe', title: 'CEO', companyName: 'Anthropic', companyDomain: 'anthropic.com', email: 'jane@anthropic.com', linkedinUrl: 'https://www.linkedin.com/in/janedoe' },
